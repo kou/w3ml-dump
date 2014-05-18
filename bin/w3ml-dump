@@ -35,7 +35,7 @@ FileUtils.mkdir_p(#{base_name.dump})
 Dir.chdir(#{base_name.dump}) do
     HEADER
     Dir.glob(File.join(directory, "*.gdbm")) do |gdbm_path|
-      gdbm_base_name = File.dirname(gdbm_path)
+      gdbm_base_name = File.basename(gdbm_path)
       dump_file.puts(<<-HEADER)
   GDBM.open(#{gdbm_base_name.dump}, 0644) do |gdbm|
       HEADER

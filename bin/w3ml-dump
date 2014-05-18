@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+#
+# Copyright (C) 2014  Kouhei Sutou <kou@cozmixng.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+require "gdbm"
+
+ARGV.each do |directory|
+  base_name = File.basename(directory)
+  dump_path = "#{base_name}.rb"
+  File.open(dump_path, "w") do |dump_file|
+    dump_file.chmod(0755)
+    dump_file.puts(<<-HEADER)
+#!/usr/bin/env ruby
+# -*- coding: ascii-8bit -*-
+
+require "gdbm"
+require "fileutils"
+
+FileUtils.rm_rf(#{base_name.dump})
+FileUtils.mkdir_p(#{base_name.dump})
+
+Dir.chdir(#{base_name.dump}) do
+    HEADER
+    Dir.glob(File.join(directory, "*.gdbm")) do |gdbm_path|
+      gdbm_base_name = File.dirname(gdbm_path)
+      dump_file.puts(<<-HEADER)
+  GDBM.open(#{gdbm_base_name.dump}, 0644) do |gdbm|
+      HEADER
+      GDBM.open(gdbm_path) do |gdbm|
+        gdbm.each do |key, value|
+          dump_file.puts(<<-VALUE)
+    gdbm[#{key.dump}] = #{value.dump}
+          VALUE
+        end
+      end
+      dump_file.puts(<<-FOOTER)
+  end
+      FOOTER
+    end
+    dump_file.puts(<<-FOOTER)
+end
+    FOOTER
+  end
+end
